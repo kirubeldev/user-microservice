@@ -4,6 +4,7 @@ from ..db.database_conn import get_db
 from sqlalchemy.orm import Session 
 from ..db.models import User
 from fastapi_jwt_auth import AuthJWT
+from ..core.rabbitmq import send_message
 from ..utils.hash_password import  Verify_password ,Hash_password
 user_Auth_route = APIRouter(
     tags=["Auth"],
@@ -41,6 +42,12 @@ def login(data:UserSchema , db:Session=Depends(get_db) , Authorize:AuthJWT=Depen
    access_token =Authorize.create_access_token(subject=str(user.id))
    refresh_token= Authorize.create_refresh_token(subject=str(user.id))
    
+   send_message("user_login_queue", {
+        "id": str(user.id),
+        "email": user.email,
+        "status": user.status,
+        "event": "user_logged_in"
+    })
    return {
       "id": user.id,
       "email":user.email,
